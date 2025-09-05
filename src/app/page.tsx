@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { loadNotes, saveNotes, createNote, type Note, serializeNotes, parseNotes, backupNotes, restoreBackup, getBackupMeta } from "@/lib/notes"
+import { loadNotes, saveNotes, createNote, type Note, serializeNotes, parseNotes, backupNotes, restoreBackup, getBackupMeta, markPending, markAllSynced } from "@/lib/notes"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -14,6 +14,7 @@ import { BottomTabs } from "@/components/bottom-tabs"
 import { ItemCard } from "@/components/item-card"
 import { StatsDisplay } from "@/components/stats-display"
 import { OfflineIndicator } from "@/components/offline-indicator"
+import { InstallPrompt } from "@/components/install-prompt"
 import { TimelineView } from "@/components/timeline-view"
 
 // Note 型は lib/notes で定義
@@ -93,6 +94,19 @@ export default function HomePage() {
     }
   }, [notes, isLoading])
 
+  // When back online, mark pending as synced
+  useEffect(() => {
+    const on = () => {
+      setNotes((prev) => {
+        const next = markAllSynced(prev)
+        saveNotes(next)
+        return next
+      })
+    }
+    window.addEventListener("online", on)
+    return () => window.removeEventListener("online", on)
+  }, [])
+
   const saveNote = () => {
     if (!inputValue.trim()) return
 
@@ -112,7 +126,10 @@ export default function HomePage() {
       }
     }
 
-    const newNote: Note = createNote({ content: inputValue, tags })
+    let newNote: Note = createNote({ content: inputValue, tags })
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      newNote = markPending(newNote)
+    }
 
     setNotes((prev) => [newNote, ...prev])
     setInputValue("")
@@ -323,6 +340,7 @@ export default function HomePage() {
       <div className="flex justify-between items-center p-4 border-b border-border">
         <h1 className="text-xl font-bold text-primary">tadomemo</h1>
         <div className="flex items-center gap-3">
+          <InstallPrompt />
           <Button
             variant="ghost"
             size="sm"

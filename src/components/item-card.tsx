@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { Note } from "@/lib/notes";
 
 type ShowDate = "date" | "time" | "dateTime";
@@ -76,6 +77,9 @@ export function ItemCard({
               );
             })}
             <span className="text-xs text-muted-foreground font-mono">{datetime}</span>
+            {note.pending && (
+              <Badge variant="secondary" className="text-[10px]">pending</Badge>
+            )}
           </div>
         </div>
         {note.tags.includes("ToDo") && onToggleComplete && (

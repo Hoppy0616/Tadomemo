@@ -8,6 +8,7 @@ export interface Note {
   tags: string[];
   timestamp: Date;
   completed?: boolean;
+  pending?: boolean;
 }
 
 export const NOTES_STORAGE_KEY = "tadomemo-notes";
@@ -79,6 +80,7 @@ export function serializeNotes(notes: Note[]): string {
     tags: Array.from(new Set((n.tags ?? []).filter((t) => typeof t === "string"))),
     timestamp: new Date(n.timestamp).toISOString(),
     completed: Boolean(n.completed),
+    pending: Boolean(n.pending),
   }));
   return JSON.stringify(payload, null, 2);
 }
@@ -97,9 +99,18 @@ export function parseNotes(json: string): Note[] {
       tags: Array.from(new Set((n.tags as string[]).filter((t) => typeof t === "string"))),
       timestamp: ts,
       completed: Boolean(n.completed),
+      pending: Boolean((n as any).pending),
     });
   }
   return out;
+}
+
+export function markPending(note: Note): Note {
+  return { ...note, pending: true };
+}
+
+export function markAllSynced(notes: Note[]): Note[] {
+  return notes.map((n) => (n.pending ? { ...n, pending: false } : n));
 }
 
 export function backupNotes(): void {
@@ -133,4 +144,3 @@ export function getBackupMeta(): { at: Date | null; exists: boolean } {
   const exists = !!window.localStorage.getItem(NOTES_BACKUP_KEY);
   return { at: at ? new Date(at) : null, exists };
 }
-
