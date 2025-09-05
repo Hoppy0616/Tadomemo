@@ -4,6 +4,9 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { loadNotes, saveNotes, createNote, type Note, serializeNotes, parseNotes, backupNotes, restoreBackup, getBackupMeta, markPending, markAllSynced } from "@/lib/notes"
+import { RuleBasedTagger } from "@/lib/rule-based-tagger"
+import { AIQueueManager } from "@/lib/ai-queue"
+import { GeminiTaggingService } from "@/lib/gemini-tagging"
 import { Toaster, showSuccess } from "@/components/toaster-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,6 +36,8 @@ export default function HomePage() {
   const searchRef = useRef<HTMLInputElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
   const backupMeta = getBackupMeta()
+  const tagger = new RuleBasedTagger()
+  const aiQueue = new AIQueueManager()
 
   // Auto-focus input on mount and after saving
   useEffect(() => {
@@ -108,6 +113,47 @@ export default function HomePage() {
     }
     window.addEventListener("online", on)
     return () => window.removeEventListener("online", on)
+  }, [])
+
+  // B6: process AI queue when online and update UI
+  useEffect(() => {
+    let cancelled = false
+    if (typeof navigator !== "undefined" && !navigator.onLine) return
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY as string | undefined
+    if (!apiKey) return
+    const svc = new GeminiTaggingService({ apiKey })
+    const tick = async () => {
+      if (cancelled) return
+      const processed = await aiQueue.processOne(async (item) => {
+        const res = await svc.tag(item.content)
+        return { tags: res.tags, confidence: res.confidence }
+      })
+      if (processed && processed.status === "done") {
+        const aiTags = processed.result?.tags ?? []
+        const conf = processed.result?.confidence
+        setNotes((prev) =>
+          prev.map((n) =>
+            n.id === processed.noteId
+              ? {
+                  ...n,
+                  tags: Array.from(new Set([...(n.tags || []), ...aiTags])),
+                  aiTags: aiTags,
+                  aiTagged: true,
+                  aiConfidence: typeof conf === "number" ? conf : n.aiConfidence,
+                  processingStatus: "done",
+                }
+              : n
+          )
+        )
+      } else if (processed && processed.status === "error") {
+        setNotes((prev) => prev.map((n) => (n.id === processed.noteId ? { ...n, processingStatus: "error" } : n)))
+      }
+      setTimeout(tick, 0)
+    }
+    tick()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const saveNote = () => {

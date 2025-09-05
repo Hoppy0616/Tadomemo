@@ -64,11 +64,14 @@ export function ItemCard({
           <div className="flex items-center gap-2 mt-2">
             {note.tags.map((tag) => {
               const active = selectedTags?.includes(tag);
+              const isAi = Array.isArray(note.aiTags) && note.aiTags.includes(tag);
               return (
                 <Badge
                   key={tag}
                   variant={active ? "default" : "outline"}
-                  className={`text-xs ${tagClickable ? "cursor-pointer" : ""}`}
+                  className={`text-xs transition-colors duration-200 ${
+                    isAi ? "border-[#2dd4bf] text-[#2dd4bf] bg-[#2dd4bf]/10" : ""
+                  } ${tagClickable ? "cursor-pointer" : ""}`}
                   onClick={tagClickable ? () => onClickTag?.(tag) : undefined}
                 >
                   #{tag}

@@ -13,6 +13,7 @@ export interface Note {
   aiTagged?: boolean;
   aiConfidence?: number; // 0..1
   processingStatus?: "idle" | "queued" | "processing" | "done" | "error";
+  aiTags?: string[]; // tags suggested by AI (for UI highlighting)
 }
 
 export const NOTES_STORAGE_KEY = "tadomemo-notes";
@@ -40,6 +41,8 @@ function migrateNote(n: Omit<Note, "timestamp"> & { timestamp: string | number }
   const aiConfidenceRaw = (n as any).aiConfidence;
   const aiConfidence = typeof aiConfidenceRaw === "number" ? Math.min(1, Math.max(0, aiConfidenceRaw)) : undefined;
   const processing = isProcessingStatus((n as any).processingStatus) ? (n as any).processingStatus : "idle";
+  const aiTagsRaw = (n as any).aiTags;
+  const aiTags = Array.isArray(aiTagsRaw) ? Array.from(new Set(aiTagsRaw.map(String))) : undefined;
   return {
     id: n.id,
     content: String(n.content),
@@ -50,6 +53,7 @@ function migrateNote(n: Omit<Note, "timestamp"> & { timestamp: string | number }
     aiTagged,
     aiConfidence,
     processingStatus: processing,
+    aiTags,
   };
 }
 
@@ -103,6 +107,7 @@ export function serializeNotes(notes: Note[]): string {
     aiTagged: Boolean(n.aiTagged),
     aiConfidence: typeof n.aiConfidence === "number" ? Math.min(1, Math.max(0, n.aiConfidence)) : undefined,
     processingStatus: isProcessingStatus(n.processingStatus) ? n.processingStatus : "idle",
+    aiTags: Array.isArray(n.aiTags) ? Array.from(new Set(n.aiTags.map(String))) : undefined,
   }));
   return JSON.stringify(payload, null, 2);
 }
