@@ -9,6 +9,10 @@ export interface Note {
   timestamp: Date;
   completed?: boolean;
   pending?: boolean;
+  // B1: AI tagging fields
+  aiTagged?: boolean;
+  aiConfidence?: number; // 0..1
+  processingStatus?: "idle" | "queued" | "processing" | "done" | "error";
 }
 
 export const NOTES_STORAGE_KEY = "tadomemo-notes";
@@ -26,6 +30,29 @@ function isNoteLike(x: any): x is Omit<Note, "timestamp"> & { timestamp: string 
   );
 }
 
+function isProcessingStatus(x: unknown): x is NonNullable<Note["processingStatus"]> {
+  return x === "idle" || x === "queued" || x === "processing" || x === "done" || x === "error";
+}
+
+function migrateNote(n: Omit<Note, "timestamp"> & { timestamp: string | number }): Note {
+  const ts = new Date(n.timestamp);
+  const aiTagged = typeof (n as any).aiTagged === "boolean" ? (n as any).aiTagged : false;
+  const aiConfidenceRaw = (n as any).aiConfidence;
+  const aiConfidence = typeof aiConfidenceRaw === "number" ? Math.min(1, Math.max(0, aiConfidenceRaw)) : undefined;
+  const processing = isProcessingStatus((n as any).processingStatus) ? (n as any).processingStatus : "idle";
+  return {
+    id: n.id,
+    content: String(n.content),
+    tags: Array.from(new Set((n.tags as string[]).filter((t) => typeof t === "string"))),
+    timestamp: ts,
+    completed: Boolean((n as any).completed),
+    pending: Boolean((n as any).pending),
+    aiTagged,
+    aiConfidence,
+    processingStatus: processing,
+  };
+}
+
 export function loadNotes(): Note[] {
   if (typeof window === "undefined") return [];
   try {
@@ -33,15 +60,7 @@ export function loadNotes(): Note[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter(isNoteLike)
-      .map((n) => ({
-        id: n.id,
-        content: String(n.content),
-        tags: Array.from(new Set((n.tags as string[]).filter((t) => typeof t === "string"))),
-        timestamp: new Date(n.timestamp),
-        completed: Boolean(n.completed),
-      }));
+    return parsed.filter(isNoteLike).map(migrateNote);
   } catch {
     return [];
   }
@@ -81,6 +100,9 @@ export function serializeNotes(notes: Note[]): string {
     timestamp: new Date(n.timestamp).toISOString(),
     completed: Boolean(n.completed),
     pending: Boolean(n.pending),
+    aiTagged: Boolean(n.aiTagged),
+    aiConfidence: typeof n.aiConfidence === "number" ? Math.min(1, Math.max(0, n.aiConfidence)) : undefined,
+    processingStatus: isProcessingStatus(n.processingStatus) ? n.processingStatus : "idle",
   }));
   return JSON.stringify(payload, null, 2);
 }
@@ -91,16 +113,8 @@ export function parseNotes(json: string): Note[] {
   const out: Note[] = [];
   for (const n of parsed) {
     if (!isNoteLike(n)) continue;
-    const ts = new Date(n.timestamp);
-    if (isNaN(ts.getTime())) continue;
-    out.push({
-      id: String(n.id),
-      content: String(n.content),
-      tags: Array.from(new Set((n.tags as string[]).filter((t) => typeof t === "string"))),
-      timestamp: ts,
-      completed: Boolean(n.completed),
-      pending: Boolean((n as any).pending),
-    });
+    const migrated = migrateNote(n);
+    if (!isNaN(migrated.timestamp.getTime())) out.push(migrated);
   }
   return out;
 }
