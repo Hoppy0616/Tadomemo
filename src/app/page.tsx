@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { loadNotes, saveNotes, createNote, type Note, serializeNotes, parseNotes, backupNotes, restoreBackup, getBackupMeta, markPending, markAllSynced } from "@/lib/notes"
+import { Toaster, toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -94,12 +95,16 @@ export default function HomePage() {
     }
   }, [notes, isLoading])
 
-  // When back online, mark pending as synced
+  // When back online, mark pending as synced and toast
   useEffect(() => {
     const on = () => {
       setNotes((prev) => {
+        const hadPending = prev.some((n) => n.pending)
         const next = markAllSynced(prev)
         saveNotes(next)
+        if (hadPending) {
+          toast.success("オンラインに復帰しました。同期が完了しました。")
+        }
         return next
       })
     }
@@ -265,6 +270,7 @@ export default function HomePage() {
 
   return (
     <AppLayout>
+      <Toaster position="top-center" richColors />
       {/* Search Overlay */}
       {isSearchOpen && (
         <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col">
