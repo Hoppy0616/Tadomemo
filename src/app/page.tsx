@@ -13,6 +13,7 @@ import { AppLayout } from "@/components/app-layout"
 import { BottomTabs } from "@/components/bottom-tabs"
 import { ItemCard } from "@/components/item-card"
 import { StatsDisplay } from "@/components/stats-display"
+import { TimelineView } from "@/components/timeline-view"
 
 // Note 型は lib/notes で定義
 
