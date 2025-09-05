@@ -3,7 +3,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { Note } from "@/lib/notes";
 
 type ShowDate = "date" | "time" | "dateTime";
