@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { loadNotes, saveNotes, createNote, type Note, serializeNotes, parseNotes, backupNotes, restoreBackup, getBackupMeta, markPending, markAllSynced } from "@/lib/notes"
-import { Toaster, toast } from "sonner"
+import { Toaster, showSuccess } from "@/components/toaster-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -102,9 +102,7 @@ export default function HomePage() {
         const hadPending = prev.some((n) => n.pending)
         const next = markAllSynced(prev)
         saveNotes(next)
-        if (hadPending) {
-          toast.success("オンラインに復帰しました。同期が完了しました。")
-        }
+        if (hadPending) showSuccess("オンラインに復帰しました。同期が完了しました。")
         return next
       })
     }
@@ -505,11 +503,10 @@ export default function HomePage() {
                 {Object.entries(getAllTags()).map(([tag, count]) => (
                   <Card
                     key={tag}
-                    className={`p-3 cursor-pointer transition-colors border ${
-                      selectedTags.includes(tag)
+                    className={`p-3 cursor-pointer transition-colors border ${selectedTags.includes(tag)
                         ? "border-primary bg-primary/10"
                         : "border-border bg-card hover:bg-card/80"
-                    }`}
+                      }`}
                     onClick={() => toggleTagFilter(tag)}
                   >
                     <div className="flex items-center justify-between">
