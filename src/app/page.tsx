@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Hash, Clock, Edit3, Filter, Search, X } from "lucide-react"
 import { AppLayout } from "@/components/app-layout"
 import { BottomTabs } from "@/components/bottom-tabs"
+import { ItemCard } from "@/components/item-card"
+import { StatsDisplay } from "@/components/stats-display"
 
 // Note 型は lib/notes で定義
 
@@ -275,38 +277,7 @@ export default function HomePage() {
                 ) : (
                   <div className="space-y-3">
                     {getSearchResults().map((note) => (
-                      <Card key={note.id} className="p-4 bg-card border-border">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <p className={`text-sm ${note.completed ? "line-through text-muted-foreground" : ""}`}>
-                              {note.content}
-                            </p>
-                            <div className="flex items-center gap-2 mt-2">
-                              {note.tags.map((tag) => (
-                                <Badge key={tag} variant="outline" className="text-xs">
-                                  #{tag}
-                                </Badge>
-                              ))}
-                              <span className="text-xs text-muted-foreground font-mono">
-                                {formatTimelineDate(note.timestamp)}{" "}
-                                {note.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                              </span>
-                            </div>
-                          </div>
-                          {note.tags.includes("ToDo") && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleNoteComplete(note.id)}
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              <div
-                                className={`w-4 h-4 border border-border rounded ${note.completed ? "bg-primary" : ""}`}
-                              />
-                            </Button>
-                          )}
-                        </div>
-                      </Card>
+                      <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="dateTime" />
                     ))}
                   </div>
                 )}
@@ -336,9 +307,7 @@ export default function HomePage() {
           >
             <Search className="w-4 h-4" />
           </Button>
-          <Badge variant="secondary" className="text-xs">
-            {getTodayNotesCount()} today
-          </Badge>
+          <StatsDisplay notes={notes} />
         </div>
       </div>
 
@@ -516,43 +485,15 @@ export default function HomePage() {
               ) : (
                 <div className="space-y-3">
                   {getFilteredNotes().map((note) => (
-                    <Card key={note.id} className="p-4 bg-card border-border">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <p className={`text-sm ${note.completed ? "line-through text-muted-foreground" : ""}`}>
-                            {note.content}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            {note.tags.map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant={selectedTags.includes(tag) ? "default" : "outline"}
-                                className="text-xs cursor-pointer"
-                                onClick={() => toggleTagFilter(tag)}
-                              >
-                                #{tag}
-                              </Badge>
-                            ))}
-                            <span className="text-xs text-muted-foreground">
-                              {note.timestamp.toLocaleDateString()}{" "}
-                              {note.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          </div>
-                        </div>
-                        {note.tags.includes("ToDo") && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleNoteComplete(note.id)}
-                            className="text-muted-foreground hover:text-foreground"
-                          >
-                            <div
-                              className={`w-4 h-4 border border-border rounded ${note.completed ? "bg-primary" : ""}`}
-                            />
-                          </Button>
-                        )}
-                      </div>
-                    </Card>
+                    <ItemCard
+                      key={note.id}
+                      note={note}
+                      onToggleComplete={toggleNoteComplete}
+                      selectedTags={selectedTags}
+                      tagClickable
+                      onClickTag={toggleTagFilter}
+                      showDate="dateTime"
+                    />
                   ))}
                 </div>
               )}
