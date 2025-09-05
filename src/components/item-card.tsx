@@ -7,6 +7,29 @@ import type { Note } from "@/lib/notes";
 
 type ShowDate = "date" | "time" | "dateTime";
 
+function highlight(text: string, query?: string) {
+  if (!query) return text;
+  try {
+    const q = query.trim();
+    if (!q) return text;
+    const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")})`, "ig");
+    const parts = text.split(re);
+    return parts.map((p, i) =>
+      re.test(p) ? (
+        // eslint-disable-next-line react/no-array-index-key
+        <mark key={i} className="bg-primary/30 text-foreground rounded px-0.5">
+          {p}
+        </mark>
+      ) : (
+        // eslint-disable-next-line react/no-array-index-key
+        <span key={i}>{p}</span>
+      )
+    );
+  } catch {
+    return text;
+  }
+}
+
 export function ItemCard({
   note,
   onToggleComplete,
@@ -14,6 +37,7 @@ export function ItemCard({
   tagClickable = false,
   selectedTags,
   onClickTag,
+  highlightQuery,
 }: {
   note: Note;
   onToggleComplete?: (id: string) => void;
@@ -21,6 +45,7 @@ export function ItemCard({
   tagClickable?: boolean;
   selectedTags?: string[];
   onClickTag?: (tag: string) => void;
+  highlightQuery?: string;
 }) {
   const datetime =
     showDate === "date"
@@ -33,7 +58,9 @@ export function ItemCard({
     <Card className="p-4 bg-card border-border">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
-          <p className={`text-sm ${note.completed ? "line-through text-muted-foreground" : ""}`}>{note.content}</p>
+          <p className={`text-sm ${note.completed ? "line-through text-muted-foreground" : ""}`}>
+            {highlight(String(note.content), highlightQuery)}
+          </p>
           <div className="flex items-center gap-2 mt-2">
             {note.tags.map((tag) => {
               const active = selectedTags?.includes(tag);
@@ -65,4 +92,3 @@ export function ItemCard({
     </Card>
   );
 }
-

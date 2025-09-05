@@ -56,8 +56,8 @@ export default function HomePage() {
         setSearchQuery("")
       }
 
-      // Tab navigation (1, 2, 3 keys)
-      if (!isSearchOpen && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      // Tab navigation (Cmd/Ctrl + 1/2/3)
+      if (!isSearchOpen && (e.metaKey || e.ctrlKey)) {
         if (e.key === "1") {
           e.preventDefault()
           setActiveTab("input")
@@ -124,9 +124,15 @@ export default function HomePage() {
     setTimeout(() => setIsAnimating(false), 300)
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      saveNote()
+      e.preventDefault()
+      if (e.metaKey || e.ctrlKey) {
+        saveNote()
+        requestAnimationFrame(() => inputRef.current?.focus())
+      } else {
+        saveNote()
+      }
     }
   }
 
@@ -177,7 +183,15 @@ export default function HomePage() {
     }).length
   }
 
-  const getRecentNotes = () => notes.slice(0, 3)
+  const getRecentNotes = () =>
+    [...notes]
+      .sort((a, b) => {
+        const at = a.timestamp?.getTime?.() ?? 0
+        const bt = b.timestamp?.getTime?.() ?? 0
+        if (bt !== at) return bt - at
+        return b.id.localeCompare(a.id)
+      })
+      .slice(0, 3)
 
   const getTimelineGroups = () => {
     const now = new Date()
@@ -277,7 +291,13 @@ export default function HomePage() {
                 ) : (
                   <div className="space-y-3">
                     {getSearchResults().map((note) => (
-                      <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="dateTime" />
+                      <ItemCard
+                        key={note.id}
+                        note={note}
+                        onToggleComplete={toggleNoteComplete}
+                        showDate="dateTime"
+                        highlightQuery={searchQuery}
+                      />
                     ))}
                   </div>
                 )}
@@ -322,7 +342,7 @@ export default function HomePage() {
                   ref={inputRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder="capture your thoughts..."
                   className="flex-1 text-lg py-6 bg-card border-border focus:border-primary transition-colors"
                   autoFocus
@@ -471,102 +491,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {activeTab === "timeline" && (
-          <div className="space-y-6">
-            {/* Timeline Groups */}
-            {(() => {
-              const timelineGroups = getTimelineGroups()
-              const hasAnyNotes = notes.length > 0
-
-              if (!hasAnyNotes) {
-                return (
-                  <Card className="p-6 bg-card border-border">
-                    <div className="text-center">
-                      <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-muted-foreground">No notes yet. Start capturing your thoughts!</p>
-                    </div>
-                  </Card>
-                )
-              }
-
-              return (
-                <>
-                  {/* Today */}
-                  {timelineGroups.today.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-sm text-muted-foreground uppercase tracking-wide font-mono">Today</h2>
-                        <div className="flex-1 h-px bg-border"></div>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {timelineGroups.today.length}
-                        </Badge>
-                      </div>
-                      <div className="space-y-3">
-                        {timelineGroups.today.map((note) => (
-                          <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="time" />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Yesterday */}
-                  {timelineGroups.yesterday.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-sm text-muted-foreground uppercase tracking-wide font-mono">Yesterday</h2>
-                        <div className="flex-1 h-px bg-border"></div>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {timelineGroups.yesterday.length}
-                        </Badge>
-                      </div>
-                      <div className="space-y-3">
-                        {timelineGroups.yesterday.map((note) => (
-                          <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="time" />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* This Week */}
-                  {timelineGroups.thisWeek.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-sm text-muted-foreground uppercase tracking-wide font-mono">This Week</h2>
-                        <div className="flex-1 h-px bg-border"></div>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {timelineGroups.thisWeek.length}
-                        </Badge>
-                      </div>
-                      <div className="space-y-3">
-                        {timelineGroups.thisWeek.map((note) => (
-                          <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="dateTime" />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Older */}
-                  {timelineGroups.older.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-sm text-muted-foreground uppercase tracking-wide font-mono">Older</h2>
-                        <div className="flex-1 h-px bg-border"></div>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {timelineGroups.older.length}
-                        </Badge>
-                      </div>
-                      <div className="space-y-3">
-                        {timelineGroups.older.map((note) => (
-                          <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="dateTime" />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )
-            })()}
-          </div>
-        )}
+        {activeTab === "timeline" && <TimelineView notes={notes} onToggleComplete={toggleNoteComplete} />}
       </div>
 
       {/* Floating Action Button */}
