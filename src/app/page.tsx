@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { loadNotes, saveNotes, createNote, type Note } from "@/lib/notes"
+import { loadNotes, saveNotes, createNote, type Note, serializeNotes, parseNotes, backupNotes, restoreBackup, getBackupMeta } from "@/lib/notes"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -28,6 +28,8 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const importRef = useRef<HTMLInputElement>(null)
+  const backupMeta = getBackupMeta()
 
   // Auto-focus input on mount and after saving
   useEffect(() => {
@@ -328,6 +330,79 @@ export default function HomePage() {
           >
             <Search className="w-4 h-4" />
           </Button>
+          <input
+            ref={importRef}
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              try {
+                const text = await file.text()
+                const imported = parseNotes(text)
+                if (!imported.length) throw new Error("No valid notes")
+                if (window.confirm("現在のデータをバックアップしてから置き換えます。よろしいですか？")) {
+                  backupNotes()
+                  setNotes(imported)
+                  saveNotes(imported)
+                }
+              } catch (err) {
+                console.error(err)
+                alert("インポートに失敗しました。ファイル形式を確認してください。")
+              } finally {
+                e.target.value = ""
+              }
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              try {
+                const json = serializeNotes(notes)
+                const blob = new Blob([json], { type: "application/json" })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement("a")
+                const ts = new Date().toISOString().replace(/[:T]/g, "-").slice(0, 19)
+                a.href = url
+                a.download = `tadomemo-export-${ts}.json`
+                document.body.appendChild(a)
+                a.click()
+                a.remove()
+                URL.revokeObjectURL(url)
+              } catch (err) {
+                console.error(err)
+                alert("エクスポートに失敗しました。")
+              }
+            }}
+            className="text-xs"
+          >
+            Export
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => importRef.current?.click()}
+            className="text-xs"
+          >
+            Import
+          </Button>
+          {backupMeta.exists && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const restored = restoreBackup()
+                if (restored) setNotes(restored)
+                else alert("バックアップの復元に失敗しました。")
+              }}
+              className="text-xs"
+              title={backupMeta.at ? `Backup: ${backupMeta.at.toLocaleString()}` : undefined}
+            >
+              Restore
+            </Button>
+          )}
           <StatsDisplay notes={notes} />
         </div>
       </div>
