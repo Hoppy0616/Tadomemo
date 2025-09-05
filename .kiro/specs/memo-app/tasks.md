@@ -83,10 +83,11 @@
   - 実装位置: `src/lib/notes.ts`（serialize/parse/backup/restore）+ `src/app/page.tsx`（UI）
   - _要件: 8.3, 8.4_
 
-- [ ] 14. PWA基盤の実装
-  - manifest.jsonの作成とPWA設定
-  - Service Workerの基本実装
-  - オフライン検出機能の実装
+- [x] 14. PWA基盤の実装
+  - manifest.json 設定（metadata へ manifest/themeColor も設定済）
+  - Service Worker: `public/sw.js`（静的アセットは cache-first、HTML は network-first+offline fallback）
+  - オフライン検出: `OfflineIndicator` をヘッダへ表示
+  - 登録: `PWAClient` を layout で読み込み、起動時に登録
   - _要件: 9.1, 9.4_
 
 - [ ] 15. PWAオフライン機能の実装

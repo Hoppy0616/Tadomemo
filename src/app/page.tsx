@@ -13,6 +13,7 @@ import { AppLayout } from "@/components/app-layout"
 import { BottomTabs } from "@/components/bottom-tabs"
 import { ItemCard } from "@/components/item-card"
 import { StatsDisplay } from "@/components/stats-display"
+import { OfflineIndicator } from "@/components/offline-indicator"
 import { TimelineView } from "@/components/timeline-view"
 
 // Note 型は lib/notes で定義
@@ -403,7 +404,10 @@ export default function HomePage() {
               Restore
             </Button>
           )}
-          <StatsDisplay notes={notes} />
+          <div className="flex items-center gap-2">
+            <OfflineIndicator />
+            <StatsDisplay notes={notes} />
+          </div>
         </div>
       </div>
 

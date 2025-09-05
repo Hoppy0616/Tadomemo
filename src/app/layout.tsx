@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import "./globals.css"
+import { PWAClient } from "@/components/pwa-client"
 
 export const metadata: Metadata = {
   title: "Tadomemo",
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className={`font-mono ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={null}>{children}</Suspense>
         <Analytics />
+        <PWAClient />
       </body>
     </html>
   )
