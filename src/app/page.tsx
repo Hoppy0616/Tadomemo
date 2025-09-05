@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Hash, Clock, Edit3, Filter, Search, X } from "lucide-react"
+import { AppLayout } from "@/components/app-layout"
+import { BottomTabs } from "@/components/bottom-tabs"
 
 // Note 型は lib/notes で定義
 
@@ -225,7 +227,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <AppLayout>
       {/* Search Overlay */}
       {isSearchOpen && (
         <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col">
@@ -788,53 +790,7 @@ export default function HomePage() {
         </Button>
       )}
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <div className="flex">
-          <Button
-            variant="ghost"
-            onClick={() => setActiveTab("input")}
-            className={`flex-1 py-4 rounded-none ${
-              activeTab === "input"
-                ? "text-background bg-primary/20 border-t-2 border-primary"
-                : "text-muted-foreground"
-            }`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <Edit3 className="w-5 h-5" />
-              <span className="text-xs">Input</span>
-            </div>
-          </Button>
-
-          <Button
-            variant="ghost"
-            onClick={() => setActiveTab("tags")}
-            className={`flex-1 py-4 rounded-none ${
-              activeTab === "tags" ? "text-background bg-primary/20 border-t-2 border-primary" : "text-muted-foreground"
-            }`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <Hash className="w-5 h-5" />
-              <span className="text-xs">By Tag</span>
-            </div>
-          </Button>
-
-          <Button
-            variant="ghost"
-            onClick={() => setActiveTab("timeline")}
-            className={`flex-1 py-4 rounded-none ${
-              activeTab === "timeline"
-                ? "text-background bg-primary/20 border-t-2 border-primary"
-                : "text-muted-foreground"
-            }`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <Clock className="w-5 h-5" />
-              <span className="text-xs">Timeline</span>
-            </div>
-          </Button>
-        </div>
-      </div>
-    </div>
+      <BottomTabs value={activeTab} onChange={setActiveTab} />
+    </AppLayout>
   )
 }
