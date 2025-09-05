@@ -352,37 +352,7 @@ export default function HomePage() {
                 </Card>
               ) : (
                 getRecentNotes().map((note) => (
-                  <Card key={note.id} className="p-4 bg-card border-border">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <p className={`text-sm ${note.completed ? "line-through text-muted-foreground" : ""}`}>
-                          {note.content}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          {note.tags.map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs">
-                              #{tag}
-                            </Badge>
-                          ))}
-                          <span className="text-xs text-muted-foreground">
-                            {note.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
-                      </div>
-                      {note.tags.includes("ToDo") && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleNoteComplete(note.id)}
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          <div
-                            className={`w-4 h-4 border border-border rounded ${note.completed ? "bg-primary" : ""}`}
-                          />
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
+                  <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="time" />
                 ))
               )}
             </div>
@@ -533,37 +503,7 @@ export default function HomePage() {
                       </div>
                       <div className="space-y-3">
                         {timelineGroups.today.map((note) => (
-                          <Card key={note.id} className="p-4 bg-card border-border">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <p className={`text-sm ${note.completed ? "line-through text-muted-foreground" : ""}`}>
-                                  {note.content}
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                  {note.tags.map((tag) => (
-                                    <Badge key={tag} variant="outline" className="text-xs">
-                                      #{tag}
-                                    </Badge>
-                                  ))}
-                                  <span className="text-xs text-muted-foreground font-mono">
-                                    {note.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                  </span>
-                                </div>
-                              </div>
-                              {note.tags.includes("ToDo") && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => toggleNoteComplete(note.id)}
-                                  className="text-muted-foreground hover:text-foreground"
-                                >
-                                  <div
-                                    className={`w-4 h-4 border border-border rounded ${note.completed ? "bg-primary" : ""}`}
-                                  />
-                                </Button>
-                              )}
-                            </div>
-                          </Card>
+                          <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="time" />
                         ))}
                       </div>
                     </div>
@@ -581,37 +521,7 @@ export default function HomePage() {
                       </div>
                       <div className="space-y-3">
                         {timelineGroups.yesterday.map((note) => (
-                          <Card key={note.id} className="p-4 bg-card border-border">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <p className={`text-sm ${note.completed ? "line-through text-muted-foreground" : ""}`}>
-                                  {note.content}
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                  {note.tags.map((tag) => (
-                                    <Badge key={tag} variant="outline" className="text-xs">
-                                      #{tag}
-                                    </Badge>
-                                  ))}
-                                  <span className="text-xs text-muted-foreground font-mono">
-                                    {note.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                  </span>
-                                </div>
-                              </div>
-                              {note.tags.includes("ToDo") && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => toggleNoteComplete(note.id)}
-                                  className="text-muted-foreground hover:text-foreground"
-                                >
-                                  <div
-                                    className={`w-4 h-4 border border-border rounded ${note.completed ? "bg-primary" : ""}`}
-                                  />
-                                </Button>
-                              )}
-                            </div>
-                          </Card>
+                          <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="time" />
                         ))}
                       </div>
                     </div>
@@ -629,38 +539,7 @@ export default function HomePage() {
                       </div>
                       <div className="space-y-3">
                         {timelineGroups.thisWeek.map((note) => (
-                          <Card key={note.id} className="p-4 bg-card border-border">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <p className={`text-sm ${note.completed ? "line-through text-muted-foreground" : ""}`}>
-                                  {note.content}
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                  {note.tags.map((tag) => (
-                                    <Badge key={tag} variant="outline" className="text-xs">
-                                      #{tag}
-                                    </Badge>
-                                  ))}
-                                  <span className="text-xs text-muted-foreground font-mono">
-                                    {formatTimelineDate(note.timestamp)}{" "}
-                                    {note.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                  </span>
-                                </div>
-                              </div>
-                              {note.tags.includes("ToDo") && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => toggleNoteComplete(note.id)}
-                                  className="text-muted-foreground hover:text-foreground"
-                                >
-                                  <div
-                                    className={`w-4 h-4 border border-border rounded ${note.completed ? "bg-primary" : ""}`}
-                                  />
-                                </Button>
-                              )}
-                            </div>
-                          </Card>
+                          <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="dateTime" />
                         ))}
                       </div>
                     </div>
@@ -678,38 +557,7 @@ export default function HomePage() {
                       </div>
                       <div className="space-y-3">
                         {timelineGroups.older.map((note) => (
-                          <Card key={note.id} className="p-4 bg-card border-border">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <p className={`text-sm ${note.completed ? "line-through text-muted-foreground" : ""}`}>
-                                  {note.content}
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                  {note.tags.map((tag) => (
-                                    <Badge key={tag} variant="outline" className="text-xs">
-                                      #{tag}
-                                    </Badge>
-                                  ))}
-                                  <span className="text-xs text-muted-foreground font-mono">
-                                    {formatTimelineDate(note.timestamp)}{" "}
-                                    {note.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                  </span>
-                                </div>
-                              </div>
-                              {note.tags.includes("ToDo") && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => toggleNoteComplete(note.id)}
-                                  className="text-muted-foreground hover:text-foreground"
-                                >
-                                  <div
-                                    className={`w-4 h-4 border border-border rounded ${note.completed ? "bg-primary" : ""}`}
-                                  />
-                                </Button>
-                              )}
-                            </div>
-                          </Card>
+                          <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="dateTime" />
                         ))}
                       </div>
                     </div>
