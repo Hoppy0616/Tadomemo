@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import { loadNotes, saveNotes, createNote, type Note, serializeNotes, parseNotes, backupNotes, restoreBackup, getBackupMeta, markPending, markAllSynced } from "@/lib/notes"
+import { loadNotes, saveNotes, createNote, type Note, serializeNotes, parseNotes, backupNotes, restoreBackup, getBackupMeta, markPending, markAllSynced, applyManualTags, normalizeTags } from "@/lib/notes"
 import { AIQueueManager } from "@/lib/ai-queue"
 import { GeminiTaggingService } from "@/lib/gemini-tagging"
 import { Toaster, showSuccess } from "@/components/toaster-client"
@@ -125,15 +125,15 @@ export default function HomePage() {
         return { tags: res.tags, confidence: res.confidence }
       })
       if (processed && processed.status === "done") {
-        const aiTags = processed.result?.tags ?? []
+        const aiTags = normalizeTags(processed.result?.tags ?? [])
         const conf = processed.result?.confidence
         setNotes((prev) =>
           prev.map((n) =>
             n.id === processed.noteId
               ? {
                   ...n,
-                  tags: Array.from(new Set([...(n.tags || []), ...aiTags])),
-                  aiTags: aiTags,
+                  tags: normalizeTags([...(n.tags || []), ...aiTags]),
+                  aiTags,
                   aiTagged: true,
                   aiConfidence: typeof conf === "number" ? conf : n.aiConfidence,
                   processingStatus: "done",
@@ -204,6 +204,14 @@ export default function HomePage() {
 
   const toggleNoteComplete = (id: string) => {
     setNotes((prev) => prev.map((note) => (note.id === id ? { ...note, completed: !note.completed } : note)))
+  }
+
+  const handleUpdateTags = (id: string, tags: string[]) => {
+    const normalized = normalizeTags(tags)
+    aiQueue.removeByNote(id)
+    setNotes((prev) => prev.map((note) => (note.id === id ? applyManualTags(note, normalized) : note)))
+    setSelectedTags((prev) => prev.filter((tag) => normalized.includes(tag)))
+    showSuccess("タグを更新しました。")
   }
 
   const getAllTags = () => {
@@ -316,6 +324,8 @@ export default function HomePage() {
                         onToggleComplete={toggleNoteComplete}
                         showDate="dateTime"
                         highlightQuery={searchQuery}
+                        editable
+                        onUpdateTags={handleUpdateTags}
                       />
                     ))}
                   </div>
@@ -472,9 +482,16 @@ export default function HomePage() {
                 <p className="text-muted-foreground text-center">No notes yet. Start capturing your thoughts!</p>
               </Card>
             ) : (
-              getRecentNotes().map((note) => (
-                <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="time" />
-              ))
+                getRecentNotes().map((note) => (
+                  <ItemCard
+                    key={note.id}
+                    note={note}
+                    onToggleComplete={toggleNoteComplete}
+                    showDate="time"
+                    editable
+                    onUpdateTags={handleUpdateTags}
+                  />
+                ))
             )}
           </div>
         </section>
@@ -578,17 +595,19 @@ export default function HomePage() {
               </Card>
             ) : (
               <div className="space-y-3">
-                {getFilteredNotes().map((note) => (
-                  <ItemCard
-                    key={note.id}
-                    note={note}
-                    onToggleComplete={toggleNoteComplete}
-                    selectedTags={selectedTags}
-                    tagClickable
-                    onClickTag={toggleTagFilter}
-                    showDate="dateTime"
-                  />
-                ))}
+                  {getFilteredNotes().map((note) => (
+                    <ItemCard
+                      key={note.id}
+                      note={note}
+                      onToggleComplete={toggleNoteComplete}
+                      selectedTags={selectedTags}
+                      tagClickable
+                      onClickTag={toggleTagFilter}
+                      showDate="dateTime"
+                      editable
+                      onUpdateTags={handleUpdateTags}
+                    />
+                  ))}
               </div>
             )}
           </div>
@@ -601,7 +620,7 @@ export default function HomePage() {
           hidden={activeTab !== "timeline"}
           className="space-y-6"
         >
-          <TimelineView notes={notes} onToggleComplete={toggleNoteComplete} />
+          <TimelineView notes={notes} onToggleComplete={toggleNoteComplete} onUpdateTags={handleUpdateTags} />
         </section>
       </div>
 

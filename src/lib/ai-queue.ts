@@ -89,6 +89,11 @@ export class AIQueueManager {
     save([]);
   }
 
+  removeByNote(noteId: string): void {
+    const remaining = load().filter((item) => item.noteId !== noteId);
+    save(remaining);
+  }
+
   /** Returns the next due item (queued or scheduled and time passed) */
   nextDue(): QueueItem | undefined {
     const items = load();

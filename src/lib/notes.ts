@@ -14,11 +14,32 @@ export interface Note {
   aiConfidence?: number; // 0..1
   processingStatus?: "idle" | "queued" | "processing" | "done" | "error";
   aiTags?: string[]; // tags suggested by AI (for UI highlighting)
+  userEditedTags?: boolean;
 }
 
 export const NOTES_STORAGE_KEY = "tadomemo-notes";
 export const NOTES_BACKUP_KEY = "tadomemo-notes.backup";
 export const NOTES_BACKUP_AT_KEY = "tadomemo-notes.backupAt";
+
+const TAG_ALIASES: Record<string, string> = {
+  todo: "ToDo",
+  memo: "Memo",
+};
+
+export function normalizeTag(tag: string): string {
+  const trimmed = tag.trim().replace(/^#/, "");
+  if (!trimmed) return "";
+  const lower = trimmed.toLowerCase();
+  const mapped = TAG_ALIASES[lower];
+  return mapped ?? trimmed;
+}
+
+export function normalizeTags(tags: string[]): string[] {
+  const normalized = tags
+    .map((tag) => normalizeTag(typeof tag === "string" ? tag : String(tag ?? "")))
+    .filter((tag) => tag.length > 0);
+  return Array.from(new Set(normalized));
+}
 
 type StoredNote = Record<string, unknown> & {
   id: string;
@@ -50,10 +71,11 @@ function migrateNote(note: StoredNote): Note {
   const processing = isProcessingStatus(note.processingStatus) ? note.processingStatus : "idle";
   const aiTagsRaw = note.aiTags;
   const aiTags = Array.isArray(aiTagsRaw) ? Array.from(new Set(aiTagsRaw.map(String))) : undefined;
+  const tags = normalizeTags(note.tags);
   return {
     id: String(note.id),
     content: String(note.content),
-    tags: Array.from(new Set(note.tags.filter((t) => typeof t === "string"))),
+    tags,
     timestamp: ts,
     completed: Boolean(note.completed),
     pending: Boolean(note.pending),
@@ -61,6 +83,7 @@ function migrateNote(note: StoredNote): Note {
     aiConfidence,
     processingStatus: processing,
     aiTags,
+    userEditedTags: Boolean(note.userEditedTags),
   };
 }
 
@@ -92,10 +115,11 @@ export function saveNotes(notes: Note[]): void {
 }
 
 export function createNote(partial: Pick<Note, "content" | "tags">): Note {
+  const tags = normalizeTags(partial.tags);
   return {
     id: ulid(),
     content: partial.content,
-    tags: Array.from(new Set(partial.tags)),
+    tags,
     timestamp: new Date(),
     completed: false,
   };
@@ -107,7 +131,7 @@ export function serializeNotes(notes: Note[]): string {
   const payload = notes.map((n) => ({
     id: String(n.id),
     content: String(n.content ?? ""),
-    tags: Array.from(new Set((n.tags ?? []).filter((t) => typeof t === "string"))),
+    tags: normalizeTags(n.tags ?? []),
     timestamp: new Date(n.timestamp).toISOString(),
     completed: Boolean(n.completed),
     pending: Boolean(n.pending),
@@ -115,6 +139,7 @@ export function serializeNotes(notes: Note[]): string {
     aiConfidence: typeof n.aiConfidence === "number" ? Math.min(1, Math.max(0, n.aiConfidence)) : undefined,
     processingStatus: isProcessingStatus(n.processingStatus) ? n.processingStatus : "idle",
     aiTags: Array.isArray(n.aiTags) ? Array.from(new Set(n.aiTags.map(String))) : undefined,
+    userEditedTags: Boolean(n.userEditedTags),
   }));
   return JSON.stringify(payload, null, 2);
 }
@@ -137,6 +162,17 @@ export function markPending(note: Note): Note {
 
 export function markAllSynced(notes: Note[]): Note[] {
   return notes.map((n) => (n.pending ? { ...n, pending: false } : n));
+}
+
+export function applyManualTags(note: Note, tags: string[]): Note {
+  const normalized = normalizeTags(tags);
+  return {
+    ...note,
+    tags: normalized,
+    aiTags: note.aiTags,
+    processingStatus: "done",
+    userEditedTags: true,
+  };
 }
 
 export function backupNotes(): void {

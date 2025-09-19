@@ -38,7 +38,15 @@ function groupByDate(notes: Note[]) {
   return groups;
 }
 
-export function TimelineView({ notes, onToggleComplete }: { notes: Note[]; onToggleComplete: (id: string) => void }) {
+export function TimelineView({
+  notes,
+  onToggleComplete,
+  onUpdateTags,
+}: {
+  notes: Note[];
+  onToggleComplete: (id: string) => void;
+  onUpdateTags?: (id: string, tags: string[]) => void;
+}) {
   const timeline = groupByDate(notes);
   const hasAnyNotes = notes.length > 0;
   if (!hasAnyNotes) {
@@ -75,6 +83,8 @@ export function TimelineView({ notes, onToggleComplete }: { notes: Note[]; onTog
                   note={note}
                   onToggleComplete={onToggleComplete}
                   showDate={key === "today" || key === "yesterday" ? "time" : "dateTime"}
+                  editable
+                  onUpdateTags={onUpdateTags}
                 />
               ))}
             </div>
@@ -84,4 +94,3 @@ export function TimelineView({ notes, onToggleComplete }: { notes: Note[]; onTog
     </>
   );
 }
-
