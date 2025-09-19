@@ -96,8 +96,8 @@ export function BottomTabs({ value, onChange }: { value: TabKey; onChange: (v: T
               onClick={() => onChange(key)}
               onKeyDown={(event) => handleKeyDown(event, index)}
               onFocus={() => setFocusedKey(key)}
-              className={`flex-1 py-4 rounded-none ${
-                isActive ? "text-background bg-primary/20 border-t-2 border-primary" : "text-muted-foreground"
+              className={`flex-1 rounded-none min-h-[44px] min-w-[44px] px-0 py-3 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                isActive ? "text-background bg-primary/20 border-t-2 border-primary" : "text-muted-foreground border-t-2 border-transparent"
               }`}
             >
               <div className="flex flex-col items-center gap-1">
