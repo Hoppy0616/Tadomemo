@@ -41,7 +41,7 @@
   - AI処理失敗時のデフォルトタグ保持処理を実装
   - _要件: 1.5, 1.6, 1.7_
 
-- [ ] 7. キーボードナビゲーション基盤の実装
+- [x] 7. キーボードナビゲーション基盤の実装
   - `src/components/bottom-tabs.tsx`にARIA属性（role, aria-selected, aria-controls）を追加
   - roving tabindex実装（アクティブタブのみtabIndex=0、他は-1）
   - タブとパネルの関連付け（aria-controls）を実装

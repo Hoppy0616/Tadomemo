@@ -2,9 +2,8 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { loadNotes, saveNotes, createNote, type Note, serializeNotes, parseNotes, backupNotes, restoreBackup, getBackupMeta, markPending, markAllSynced } from "@/lib/notes"
-import { RuleBasedTagger } from "@/lib/rule-based-tagger"
 import { AIQueueManager } from "@/lib/ai-queue"
 import { GeminiTaggingService } from "@/lib/gemini-tagging"
 import { Toaster, showSuccess } from "@/components/toaster-client"
@@ -12,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Hash, Clock, Edit3, Filter, Search, X } from "lucide-react"
+import { Plus, Hash, Filter, Search, X } from "lucide-react"
 import { AppLayout } from "@/components/app-layout"
 import { BottomTabs } from "@/components/bottom-tabs"
 import { ItemCard } from "@/components/item-card"
@@ -36,8 +35,7 @@ export default function HomePage() {
   const searchRef = useRef<HTMLInputElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
   const backupMeta = getBackupMeta()
-  const tagger = new RuleBasedTagger()
-  const aiQueue = new AIQueueManager()
+  const aiQueue = useMemo(() => new AIQueueManager(), [])
 
   // Auto-focus input on mount and after saving
   useEffect(() => {
@@ -154,7 +152,7 @@ export default function HomePage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [aiQueue])
 
   const saveNote = () => {
     if (!inputValue.trim()) return
@@ -243,16 +241,6 @@ export default function HomePage() {
     setSelectedTags([])
   }
 
-  const getTodayNotesCount = () => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return notes.filter((note) => {
-      const noteDate = new Date(note.timestamp)
-      noteDate.setHours(0, 0, 0, 0)
-      return noteDate.getTime() === today.getTime()
-    }).length
-  }
-
   const getRecentNotes = () =>
     [...notes]
       .sort((a, b) => {
@@ -262,44 +250,6 @@ export default function HomePage() {
         return b.id.localeCompare(a.id)
       })
       .slice(0, 3)
-
-  const getTimelineGroups = () => {
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
-    const thisWeekStart = new Date(today.getTime() - today.getDay() * 24 * 60 * 60 * 1000)
-
-    const groups = {
-      today: [] as Note[],
-      yesterday: [] as Note[],
-      thisWeek: [] as Note[],
-      older: [] as Note[],
-    }
-
-    notes.forEach((note) => {
-      const noteDate = new Date(note.timestamp.getFullYear(), note.timestamp.getMonth(), note.timestamp.getDate())
-
-      if (noteDate.getTime() === today.getTime()) {
-        groups.today.push(note)
-      } else if (noteDate.getTime() === yesterday.getTime()) {
-        groups.yesterday.push(note)
-      } else if (noteDate.getTime() >= thisWeekStart.getTime()) {
-        groups.thisWeek.push(note)
-      } else {
-        groups.older.push(note)
-      }
-    })
-
-    return groups
-  }
-
-  const formatTimelineDate = (date: Date) => {
-    return date.toLocaleDateString([], {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    })
-  }
 
   if (isLoading) {
     return (
@@ -356,7 +306,7 @@ export default function HomePage() {
                   <Card className="p-6 bg-card border-border">
                     <div className="text-center">
                       <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-muted-foreground">No notes found matching "{searchQuery}"</p>
+                      <p className="text-muted-foreground">No notes found matching &quot;{searchQuery}&quot;</p>
                     </div>
                   </Card>
                 ) : (
@@ -481,164 +431,180 @@ export default function HomePage() {
 
       {/* Main Content */}
       <div className="flex-1 p-4 pb-20">
-        {activeTab === "input" && (
-          <div className="space-y-6">
-            {/* Input Section */}
-            <div className="space-y-4">
-              <div className="flex gap-3 items-center">
-                <Input
-                  ref={inputRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="capture your thoughts..."
-                  className="flex-1 text-lg py-6 bg-card border-border focus:border-primary transition-colors"
-                  autoFocus
-                />
-                <Button
-                  onClick={saveNote}
-                  disabled={!inputValue.trim()}
-                  size="lg"
-                  className="px-6 py-6 bg-primary hover:bg-primary/90 text-primary-foreground"
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </div>
-              {isAnimating && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                </div>
-              )}
+        <section
+          id="input-panel"
+          role="tabpanel"
+          aria-labelledby="tab-input"
+          hidden={activeTab !== "input"}
+          className="space-y-6"
+        >
+          {/* Input Section */}
+          <div className="space-y-4">
+            <div className="flex gap-3 items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="capture your thoughts..."
+                className="flex-1 text-lg py-6 bg-card border-border focus:border-primary transition-colors"
+                autoFocus
+              />
+              <Button
+                onClick={saveNote}
+                disabled={!inputValue.trim()}
+                size="lg"
+                className="px-6 py-6 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
             </div>
-
-            {/* Recent Notes */}
-            <div className="space-y-3">
-              <h2 className="text-sm text-muted-foreground uppercase tracking-wide">Recent Notes</h2>
-              {getRecentNotes().length === 0 ? (
-                <Card className="p-4 bg-card border-border">
-                  <p className="text-muted-foreground text-center">No notes yet. Start capturing your thoughts!</p>
-                </Card>
-              ) : (
-                getRecentNotes().map((note) => (
-                  <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="time" />
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === "tags" && (
-          <div className="space-y-6">
-            {/* Tag Statistics */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm text-muted-foreground uppercase tracking-wide">Tag Statistics</h2>
-                {selectedTags.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearTagFilters}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Clear Filters
-                  </Button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {Object.entries(getAllTags()).map(([tag, count]) => (
-                  <Card
-                    key={tag}
-                    className={`p-3 cursor-pointer transition-colors border ${selectedTags.includes(tag)
-                        ? "border-primary bg-primary/10"
-                        : "border-border bg-card hover:bg-card/80"
-                      }`}
-                    onClick={() => toggleTagFilter(tag)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Hash className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{tag}</span>
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {count}
-                      </Badge>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              {Object.keys(getAllTags()).length === 0 && (
-                <Card className="p-6 bg-card border-border">
-                  <div className="text-center">
-                    <Hash className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">No tags yet. Start adding notes to see tag statistics!</p>
-                  </div>
-                </Card>
-              )}
-            </div>
-
-            {/* Active Filters */}
-            {selectedTags.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-xs text-muted-foreground uppercase tracking-wide">Active Filters</h3>
-                <div className="flex flex-wrap gap-2">
-                  {selectedTags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="default"
-                      className="cursor-pointer bg-primary text-primary-foreground"
-                      onClick={() => toggleTagFilter(tag)}
-                    >
-                      #{tag} ×
-                    </Badge>
-                  ))}
-                </div>
+            {isAnimating && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
               </div>
             )}
+          </div>
 
-            {/* Filtered Notes */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm text-muted-foreground uppercase tracking-wide">
-                  {selectedTags.length > 0 ? "Filtered Notes" : "All Notes"}
-                </h2>
-                <Badge variant="outline" className="text-xs">
-                  {getFilteredNotes().length} notes
-                </Badge>
-              </div>
+          {/* Recent Notes */}
+          <div className="space-y-3">
+            <h2 className="text-sm text-muted-foreground uppercase tracking-wide">Recent Notes</h2>
+            {getRecentNotes().length === 0 ? (
+              <Card className="p-4 bg-card border-border">
+                <p className="text-muted-foreground text-center">No notes yet. Start capturing your thoughts!</p>
+              </Card>
+            ) : (
+              getRecentNotes().map((note) => (
+                <ItemCard key={note.id} note={note} onToggleComplete={toggleNoteComplete} showDate="time" />
+              ))
+            )}
+          </div>
+        </section>
 
-              {getFilteredNotes().length === 0 ? (
-                <Card className="p-6 bg-card border-border">
-                  <div className="text-center">
-                    <Filter className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">
-                      {selectedTags.length > 0
-                        ? "No notes found with the selected tags."
-                        : "No notes yet. Start capturing your thoughts!"}
-                    </p>
-                  </div>
-                </Card>
-              ) : (
-                <div className="space-y-3">
-                  {getFilteredNotes().map((note) => (
-                    <ItemCard
-                      key={note.id}
-                      note={note}
-                      onToggleComplete={toggleNoteComplete}
-                      selectedTags={selectedTags}
-                      tagClickable
-                      onClickTag={toggleTagFilter}
-                      showDate="dateTime"
-                    />
-                  ))}
-                </div>
+        <section
+          id="tags-panel"
+          role="tabpanel"
+          aria-labelledby="tab-tags"
+          hidden={activeTab !== "tags"}
+          className="space-y-6"
+        >
+          {/* Tag Statistics */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm text-muted-foreground uppercase tracking-wide">Tag Statistics</h2>
+              {selectedTags.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearTagFilters}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Clear Filters
+                </Button>
               )}
             </div>
-          </div>
-        )}
 
-        {activeTab === "timeline" && <TimelineView notes={notes} onToggleComplete={toggleNoteComplete} />}
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(getAllTags()).map(([tag, count]) => (
+                <Card
+                  key={tag}
+                  className={`p-3 cursor-pointer transition-colors border ${selectedTags.includes(tag)
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:bg-card/80"
+                    }`}
+                  onClick={() => toggleTagFilter(tag)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Hash className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{tag}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {count}
+                    </Badge>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {Object.keys(getAllTags()).length === 0 && (
+              <Card className="p-6 bg-card border-border">
+                <div className="text-center">
+                  <Hash className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground">No tags yet. Start adding notes to see tag statistics!</p>
+                </div>
+              </Card>
+            )}
+          </div>
+
+          {/* Active Filters */}
+          {selectedTags.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs text-muted-foreground uppercase tracking-wide">Active Filters</h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedTags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="default"
+                    className="cursor-pointer bg-primary text-primary-foreground"
+                    onClick={() => toggleTagFilter(tag)}
+                  >
+                    #{tag} ×
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Filtered Notes */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm text-muted-foreground uppercase tracking-wide">
+                {selectedTags.length > 0 ? "Filtered Notes" : "All Notes"}
+              </h2>
+              <Badge variant="outline" className="text-xs">
+                {getFilteredNotes().length} notes
+              </Badge>
+            </div>
+
+            {getFilteredNotes().length === 0 ? (
+              <Card className="p-6 bg-card border-border">
+                <div className="text-center">
+                  <Filter className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground">
+                    {selectedTags.length > 0
+                      ? "No notes found with the selected tags."
+                      : "No notes yet. Start capturing your thoughts!"}
+                  </p>
+                </div>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {getFilteredNotes().map((note) => (
+                  <ItemCard
+                    key={note.id}
+                    note={note}
+                    onToggleComplete={toggleNoteComplete}
+                    selectedTags={selectedTags}
+                    tagClickable
+                    onClickTag={toggleTagFilter}
+                    showDate="dateTime"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section
+          id="timeline-panel"
+          role="tabpanel"
+          aria-labelledby="tab-timeline"
+          hidden={activeTab !== "timeline"}
+          className="space-y-6"
+        >
+          <TimelineView notes={notes} onToggleComplete={toggleNoteComplete} />
+        </section>
       </div>
 
       {/* Floating Action Button */}
