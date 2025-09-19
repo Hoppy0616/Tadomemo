@@ -53,36 +53,34 @@ export default function HomePage() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + K for search
+      // Cmd/Ctrl + K for search palette
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault()
         setIsSearchOpen(true)
       }
 
-      // Escape to close search
+      // Escape to close search if open
       if (e.key === "Escape" && isSearchOpen) {
         setIsSearchOpen(false)
         setSearchQuery("")
       }
 
-      // Tab navigation (Cmd/Ctrl + 1/2/3)
-      if (!isSearchOpen && (e.metaKey || e.ctrlKey)) {
-        if (e.key === "1") {
-          e.preventDefault()
-          setActiveTab("input")
-        } else if (e.key === "2") {
-          e.preventDefault()
-          setActiveTab("tags")
-        } else if (e.key === "3") {
-          e.preventDefault()
-          setActiveTab("timeline")
-        }
+      if ((e.metaKey || e.ctrlKey) && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+        e.preventDefault()
+        const order: Array<"input" | "tags" | "timeline"> = ["input", "tags", "timeline"]
+        const current = order.indexOf(activeTab)
+        if (current === -1) return
+        const nextIndex =
+          e.key === "ArrowRight"
+            ? (current + 1) % order.length
+            : (current - 1 + order.length) % order.length
+        setActiveTab(order[nextIndex]!)
       }
     }
 
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [isSearchOpen])
+  }, [isSearchOpen, activeTab])
 
   // Load notes from storage on mount
   useEffect(() => {
