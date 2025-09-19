@@ -3,14 +3,24 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
+};
+
 export function InstallPrompt() {
-  const [deferred, setDeferred] = useState<any>(null);
+  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const handler = (e: any) => {
-      e.preventDefault();
-      setDeferred(e);
+    const handler = (event: Event) => {
+      const promptEvent = event as BeforeInstallPromptEvent;
+      if (typeof promptEvent.prompt !== "function" || !promptEvent.userChoice) return;
+      promptEvent.preventDefault();
+      setDeferred(promptEvent);
       setVisible(true);
     };
     window.addEventListener("beforeinstallprompt", handler);
@@ -37,4 +47,3 @@ export function InstallPrompt() {
     </Button>
   );
 }
-

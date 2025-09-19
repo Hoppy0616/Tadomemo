@@ -1,6 +1,6 @@
 "use client";
 
-import { Item, TAGS, isItem, sanitizeItems, Tag } from "@/lib/types";
+import { Item, TAGS, sanitizeItems, Tag } from "@/lib/types";
 import { monotonicUlidFactory } from "@/lib/ulid";
 
 export const STORAGE_KEY = "memo.v1.items";
@@ -65,4 +65,3 @@ export class LocalStorageManager {
 }
 
 export const itemsStore = new LocalStorageManager(STORAGE_KEY);
-

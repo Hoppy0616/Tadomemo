@@ -54,6 +54,16 @@ function backoffDelayMs(attempts: number): number {
   return base * Math.pow(2, exp - 1);
 }
 
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Unknown error";
+  }
+}
+
 export class AIQueueManager {
   private maxRetries = 2; // 最大2回のリトライ
 
@@ -107,15 +117,16 @@ export class AIQueueManager {
       item.result = res;
       this.upsert(item);
       return item;
-    } catch (e: any) {
+    } catch (error: unknown) {
       item.attempts += 1;
+      const message = toErrorMessage(error);
       if (item.attempts > this.maxRetries) {
         item.status = "error";
-        item.lastError = String(e?.message || e);
+        item.lastError = message;
         this.upsert(item);
       } else {
         item.status = "queued";
-        item.lastError = String(e?.message || e);
+        item.lastError = message;
         item.scheduledAt = now() + backoffDelayMs(item.attempts);
         this.upsert(item);
       }
@@ -123,4 +134,3 @@ export class AIQueueManager {
     }
   }
 }
-

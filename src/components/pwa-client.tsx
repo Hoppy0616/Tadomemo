@@ -21,8 +21,10 @@ export function PWAClient() {
             }
           });
         });
-      } catch (e) {
-        // console.error("SW registration failed", e);
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("SW registration failed", error);
+        }
       }
     };
     // delay until window load for stability
@@ -31,4 +33,3 @@ export function PWAClient() {
   }, []);
   return null;
 }
-

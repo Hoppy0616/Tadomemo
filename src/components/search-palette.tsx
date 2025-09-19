@@ -68,7 +68,7 @@ export function SearchPalette({
               <Card className="p-6 bg-card border-border">
                 <div className="text-center">
                   <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">No notes found matching "{query}"</p>
+                  <p className="text-muted-foreground">No notes found matching &quot;{query}&quot;</p>
                 </div>
               </Card>
             ) : (
@@ -98,4 +98,3 @@ export function SearchPalette({
     </div>
   );
 }
-

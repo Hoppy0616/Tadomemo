@@ -4,8 +4,8 @@ describe("AIQueueManager", () => {
   test("enqueue and process success", async () => {
     const q = new AIQueueManager();
     q.clear();
-    const item = q.enqueue("n1", "hello world");
-    const processed = await q.processOne(async (i) => ({ tags: ["Memo"], confidence: 0.9 }));
+    q.enqueue("n1", "hello world");
+    const processed = await q.processOne(async () => ({ tags: ["Memo"], confidence: 0.9 }));
     expect(processed?.status).toBe("done");
     expect(processed?.result?.tags).toContain("Memo");
   });
@@ -20,16 +20,18 @@ describe("AIQueueManager", () => {
     });
     const after1 = q.list()[0]!;
     expect(after1.status).toBe("queued");
-    // Force due
-    after1.scheduledAt = Date.now() - 1;
-    // Simulate persistence
-    (q as any)["upsert"](after1);
-    await q.processOne(async () => {
-      throw new Error("boom");
-    });
+    // Force due by faking timer
+    const originalNow = Date.now;
+    try {
+      Date.now = () => originalNow() + 2000;
+      await q.processOne(async () => {
+        throw new Error("boom");
+      });
+    } finally {
+      Date.now = originalNow;
+    }
     // Next failure should mark error
     const after2 = q.list()[0]!;
     expect(["queued", "error"]).toContain(after2.status);
   });
 });
-

@@ -5,7 +5,6 @@ const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"; // Crockford, no I,L,O,U
 function encodeBase32(buffer: Uint8Array): string {
   let str = "";
   for (let i = 0; i < buffer.length; i += 5) {
-    const chunk = (buffer[i]! << 32) >>> 0;
     const b1 = buffer[i + 1] ?? 0;
     const b2 = buffer[i + 2] ?? 0;
     const b3 = buffer[i + 3] ?? 0;
@@ -69,4 +68,3 @@ export function monotonicUlidFactory() {
     return lastId;
   };
 }
-

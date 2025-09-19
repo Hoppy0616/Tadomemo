@@ -14,15 +14,13 @@ function highlight(text: string, query?: string) {
     if (!q) return text;
     const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")})`, "ig");
     const parts = text.split(re);
-    return parts.map((p, i) =>
-      re.test(p) ? (
-        // eslint-disable-next-line react/no-array-index-key
-        <mark key={i} className="bg-primary/30 text-foreground rounded px-0.5">
-          {p}
+    return parts.map((part, index) =>
+      index % 2 === 1 ? (
+        <mark key={`${part}-${index}`} className="bg-primary/30 text-foreground rounded px-0.5">
+          {part}
         </mark>
       ) : (
-        // eslint-disable-next-line react/no-array-index-key
-        <span key={i}>{p}</span>
+        <span key={`${part}-${index}`}>{part}</span>
       )
     );
   } catch {

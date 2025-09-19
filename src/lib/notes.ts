@@ -20,36 +20,43 @@ export const NOTES_STORAGE_KEY = "tadomemo-notes";
 export const NOTES_BACKUP_KEY = "tadomemo-notes.backup";
 export const NOTES_BACKUP_AT_KEY = "tadomemo-notes.backupAt";
 
-function isNoteLike(x: any): x is Omit<Note, "timestamp"> & { timestamp: string | number } {
-  return (
-    x &&
-    typeof x === "object" &&
-    typeof x.id === "string" &&
-    typeof x.content === "string" &&
-    Array.isArray(x.tags) && x.tags.every((t: any) => typeof t === "string") &&
-    (typeof x.timestamp === "string" || typeof x.timestamp === "number")
-  );
+type StoredNote = Record<string, unknown> & {
+  id: string;
+  content: string;
+  tags: string[];
+  timestamp: string | number;
+};
+
+function isNoteLike(value: unknown): value is StoredNote {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  if (typeof record.id !== "string") return false;
+  if (typeof record.content !== "string") return false;
+  if (!Array.isArray(record.tags) || !record.tags.every((tag) => typeof tag === "string")) return false;
+  const timestamp = record.timestamp;
+  if (typeof timestamp !== "string" && typeof timestamp !== "number") return false;
+  return true;
 }
 
 function isProcessingStatus(x: unknown): x is NonNullable<Note["processingStatus"]> {
   return x === "idle" || x === "queued" || x === "processing" || x === "done" || x === "error";
 }
 
-function migrateNote(n: Omit<Note, "timestamp"> & { timestamp: string | number }): Note {
-  const ts = new Date(n.timestamp);
-  const aiTagged = typeof (n as any).aiTagged === "boolean" ? (n as any).aiTagged : false;
-  const aiConfidenceRaw = (n as any).aiConfidence;
+function migrateNote(note: StoredNote): Note {
+  const ts = new Date(note.timestamp);
+  const aiTagged = typeof note.aiTagged === "boolean" ? note.aiTagged : false;
+  const aiConfidenceRaw = note.aiConfidence;
   const aiConfidence = typeof aiConfidenceRaw === "number" ? Math.min(1, Math.max(0, aiConfidenceRaw)) : undefined;
-  const processing = isProcessingStatus((n as any).processingStatus) ? (n as any).processingStatus : "idle";
-  const aiTagsRaw = (n as any).aiTags;
+  const processing = isProcessingStatus(note.processingStatus) ? note.processingStatus : "idle";
+  const aiTagsRaw = note.aiTags;
   const aiTags = Array.isArray(aiTagsRaw) ? Array.from(new Set(aiTagsRaw.map(String))) : undefined;
   return {
-    id: n.id,
-    content: String(n.content),
-    tags: Array.from(new Set((n.tags as string[]).filter((t) => typeof t === "string"))),
+    id: String(note.id),
+    content: String(note.content),
+    tags: Array.from(new Set(note.tags.filter((t) => typeof t === "string"))),
     timestamp: ts,
-    completed: Boolean((n as any).completed),
-    pending: Boolean((n as any).pending),
+    completed: Boolean(note.completed),
+    pending: Boolean(note.pending),
     aiTagged,
     aiConfidence,
     processingStatus: processing,

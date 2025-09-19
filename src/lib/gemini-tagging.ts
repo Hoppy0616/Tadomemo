@@ -29,11 +29,13 @@ export class GeminiTaggingService {
         signal: ctrl.signal,
       });
       if (!res.ok) throw new Error(`Gemini error: ${res.status}`);
-      const data: any = await res.json();
+      const data = (await res.json()) as unknown;
       return this.parseResponse(data);
-    } catch (e: any) {
-      if (e?.name === "AbortError") throw new Error("Gemini request timed out");
-      throw e;
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error("Gemini request timed out");
+      }
+      throw error;
     } finally {
       clearTimeout(to);
     }
@@ -48,9 +50,14 @@ Rules:
 Input: ${content}`;
   }
 
-  private parseResponse(json: any): GeminiTaggingResult {
+  private parseResponse(json: unknown): GeminiTaggingResult {
     try {
-      const text = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      const root = json as {
+        candidates?: Array<{
+          content?: { parts?: Array<{ text?: string }> };
+        }>;
+      };
+      const text = root.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
       const m = text.match(/\{[\s\S]*\}/);
       const data = m ? JSON.parse(m[0]) : JSON.parse(text);
       const tags: string[] = Array.isArray(data.tags) ? data.tags.map(String) : [];
@@ -58,7 +65,7 @@ Input: ${content}`;
       return { tags, confidence };
     } catch {
       // Fallback: best-effort basic heuristic
-      const lc = String(json).toLowerCase();
+      const lc = String(json ?? "").toLowerCase();
       const tags: string[] = [];
       if (lc.includes("todo")) tags.push("ToDo");
       if (lc.includes("idea")) tags.push("Idea");
@@ -67,4 +74,3 @@ Input: ${content}`;
     }
   }
 }
-
